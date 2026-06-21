@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Kanban Board</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f0f2f5;color:#111;min-height:100vh}
+.app{padding:1rem}
+.topbar{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;flex-wrap:wrap}
+.topbar h1{font-size:18px;font-weight:500;flex:1}
+.btn{background:#fff;border:0.5px solid rgba(0,0,0,0.3);border-radius:8px;padding:6px 14px;font-size:13px;cursor:pointer;color:#111;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:#f0f0f0}
+.btn.primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn.primary:hover{background:#0c447c}
+.btn.danger{background:#fee;color:#a32d2d;border-color:#f09595}
+.board{display:flex;gap:12px;overflow-x:auto;align-items:flex-start;padding-bottom:1rem}
+.list{background:#e9ebee;border-radius:12px;padding:12px;min-width:260px;max-width:280px;flex-shrink:0}
+.list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.list-title{font-size:14px;font-weight:500}
+.list-count{font-size:12px;color:#666;background:#fff;border-radius:20px;padding:1px 8px;border:0.5px solid rgba(0,0,0,0.15)}
+.card{background:#fff;border:0.5px solid rgba(0,0,0,0.12);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.card:hover{border-color:rgba(0,0,0,0.4)}
+.card.overdue{border-left:3px solid #e24b4a}
+.card-title{font-size:14px;font-weight:500;margin-bottom:6px;line-height:1.4}
+.card-desc{font-size:12px;color:#666;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.tag{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.tag.bug{background:#fcebeb;color:#791f1f}
+.tag.design{background:#eeedfe;color:#3c3489}
+.tag.feature{background:#e1f5ee;color:#085041}
+.tag.docs{background:#faeeda;color:#633806}
+.tag.review{background:#fbeaf0;color:#72243e}
+.card-meta{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.assignee{display:flex;align-items:center;gap:5px;font-size:12px;color:#666}
+.avatar{width:22px;height:22px;border-radius:50%;background:#e6f1fb;color:#185fa5;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;flex-shrink:0}
+.due{font-size:11px;color:#666}
+.due.overdue{color:#e24b4a;font-weight:500}
+.add-card-btn{width:100%;background:transparent;border:0.5px dashed rgba(0,0,0,0.25);border-radius:8px;padding:8px;font-size:13px;cursor:pointer;color:#666;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:2px}
+.add-card-btn:hover{background:#fff}
+.add-list-btn{min-width:240px;background:rgba(255,255,255,0.6);border:0.5px dashed rgba(0,0,0,0.25);border-radius:12px;padding:14px;font-size:14px;cursor:pointer;color:#666;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.add-list-btn:hover{background:rgba(255,255,255,0.9)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:3rem 1rem;overflow-y:auto}
+.modal{background:#fff;border-radius:12px;border:0.5px solid rgba(0,0,0,0.2);width:100%;max-width:500px;padding:1.5rem}
+.modal h2{font-size:16px;font-weight:500;margin-bottom:1rem}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:13px;color:#666;margin-bottom:4px}
+.field input,.field textarea,.field select{width:100%;padding:8px 10px;border:0.5px solid rgba(0,0,0,0.3);border-radius:8px;font-size:14px;background:#fff;color:#111;font-family:inherit}
+.field textarea{resize:vertical;min-height:70px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;flex-wrap:wrap}
+.tags-pick{display:flex;flex-wrap:wrap;gap:6px}
+.tag-pick{padding:4px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:0.5px solid transparent;font-weight:500}
+.tag-pick.selected{outline:2px solid #185FA5;outline-offset:1px}
+.members-list{display:flex;flex-wrap:wrap;gap:6px}
+.member-pick{display:flex;align-items:center;gap:6px;padding:5px 10px;border:0.5px solid rgba(0,0,0,0.15);border-radius:8px;cursor:pointer;font-size:13px}
+.member-pick.selected{border-color:#185FA5;background:#e6f1fb;color:#185fa5}
+.list-actions{display:flex;gap:4px;align-items:center}
+.icon-btn{background:transparent;border:none;cursor:pointer;color:#666;padding:2px 4px;border-radius:4px;font-size:14px;display:flex;align-items:center}
+.icon-btn:hover{color:#111;background:#ddd}
+.badge-overdue{font-size:11px;background:#fcebeb;color:#791f1f;border-radius:20px;padding:1px 7px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="app" id="root"></div>
+<script>
+const API_BASE = 'http://localhost:8000/api';
+const MEMBERS=[{id:'m1',name:'Aryan',initials:'AR'},{id:'m2',name:'Priya',initials:'PR'},{id:'m3',name:'Kabir',initials:'KA'},{id:'m4',name:'Sneha',initials:'SN'}];
+const TAG_COLORS=['bug','design','feature','docs','review'];
+const TAG_LABELS={bug:'Bug',design:'Design',feature:'Feature',docs:'Docs',review:'Review'};
+
+function uid(){return Math.random().toString(36).slice(2,9)}
+function today(){return new Date().toISOString().slice(0,10)}
+function isOverdue(date){return date&&date<today()}
+function fmtDate(d){if(!d)return '';const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}
+function getMember(id){return state.members.find(m=>m.id===id)||MEMBERS.find(m=>m.id===id)}
+
+let state={
+  boards:[{id:'b1',name:'Sprint Board'}],
+  activeBoardId:'b1',
+  lists:[
+    {id:'l1',boardId:'b1',title:'To Do'},
+    {id:'l2',boardId:'b1',title:'Doing'},
+    {id:'l3',boardId:'b1',title:'Done'},
+  ],
+  cards:[
+    {id:'c1',listId:'l1',title:'Set up Laravel project',description:'Scaffold the project with migrations, models, routes.',tags:['feature'],assigneeId:'m1',dueDate:'2026-06-25'},
+    {id:'c2',listId:'l1',title:'Design system tokens',description:'Define colors, typography, spacing.',tags:['design'],assigneeId:'m2',dueDate:'2026-06-19'},
+    {id:'c3',listId:'l2',title:'React Kanban UI',description:'Build the board with drag support.',tags:['feature','design'],assigneeId:'m1',dueDate:'2026-06-21'},
+    {id:'c4',listId:'l2',title:'Fix auth bug',description:'Token refresh fails after 1h.',tags:['bug'],assigneeId:'m3',dueDate:'2026-06-20'},
+    {id:'c5',listId:'l3',title:'Write API docs',description:'Document all endpoints.',tags:['docs'],assigneeId:'m4',dueDate:'2026-06-18'},
+  ],
+  members:[],
+  loading:false,
+  error:''
+};
+let modal=null;
+let tempTags=[];
+let tempMember='';
+
+async function apiFetch(path, options={}){
+  const url = `${API_BASE}${path}`;
+  const config = {
+    headers:{'Content-Type':'application/json'},
+    ...options,
+  };
+  if (config.body && typeof config.body !== 'string') {
+    config.body = JSON.stringify(config.body);
+  }
+  const response = await fetch(url, config);
+  if (!response.ok) {
+    const payload = await response.json().catch(()=>null);
+    const message = payload?.error || response.statusText || 'API error';
+    throw new Error(message);
+  }
+  if (response.status === 204) return null;
+  return response.json();
+}
+
+async function loadBoardData(){
+  state.loading = true;
+  state.error = '';
+  render();
+  try {
+    const boards = await apiFetch('/boards');
+    if (!Array.isArray(boards) || boards.length === 0) {
+      state.error = 'No boards found in API.';
+      return;
+    }
+    state.boards = boards.map(b=>({id:String(b.id), name:b.name}));
+    const board = boards[0];
+    state.activeBoardId = String(board.id);
+    state.lists = (board.lists || []).map(list=>({id:String(list.id), boardId:String(board.id), title:list.title}));
+    state.cards = (board.lists || []).flatMap(list=> (list.cards || []).map(card => ({
+      id:String(card.id),
+      listId:String(list.id),
+      title:card.title,
+      description:card.description || '',
+      tags:Array.isArray(card.tags) ? card.tags : [],
+      assigneeId:card.member_id ? String(card.member_id) : '',
+      dueDate:card.due_date || ''
+    })));
+    state.members = (board.members || []).map(member => ({id:String(member.id), name:member.name, initials:member.initials}));
+  } catch (error) {
+    state.error = 'API not reachable: ' + error.message;
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+function render(){
+  const root=document.getElementById('root');
+  const board=state.boards.find(b=>b.id===state.activeBoardId) || {name:'Kanban Board'};
+  const lists=state.lists.filter(l=>l.boardId===state.activeBoardId);
+  const doneListId=lists.find(l=>l.title==='Done')?.id;
+  const overdueCount=state.cards.filter(c=>{
+    const list=state.lists.find(l=>l.id===c.listId);
+    return list && list.boardId===state.activeBoardId && isOverdue(c.dueDate) && c.listId!==doneListId;
+  }).length;
+  const statusBanner = state.loading
+    ? '<span class="loading">Loading board data...</span>'
+    : state.error
+      ? `<span class="error-message">${state.error}</span>`
+      : '';
+
+  root.innerHTML=`
+    <div class="topbar">
+      <h1>📋 ${board.name}</h1>
+      ${overdueCount>0?`<span class="badge-overdue">⚠ ${overdueCount} overdue</span>`:''}
+      <button class="btn" onclick="openNewList()">+ Add list</button>
+    </div>
+    ${statusBanner}
+    <div class="board">
+      ${lists.map(list=>{
+        const cards=state.cards.filter(c=>c.listId===list.id);
+        return `<div class="list">
+          <div class="list-header">
+            <span class="list-title">${list.title}</span>
+            <div class="list-actions">
+              <span class="list-count">${cards.length}</span>
+              <button class="icon-btn" onclick="openEditList('${list.id}')" title="Rename">✏️</button>
+              <button class="icon-btn" onclick="deleteList('${list.id}')" title="Delete">🗑️</button>
+            </div>
+          </div>
+          ${cards.map(card=>{
+            const overdue=isOverdue(card.dueDate)&&list.id!==doneListId;
+            const member=getMember(card.assigneeId);
+            return `<div class="card${overdue?' overdue':''}" onclick="openCard('${card.id}')">
+              <div class="card-title">${card.title}</div>
+              ${card.description?`<div class="card-desc">${card.description}</div>`:''}
+              ${card.tags&&card.tags.length?`<div class="tags">${card.tags.map(t=>`<span class="tag ${t}">${TAG_LABELS[t]}</span>`).join('')}</div>`:''}
+              <div class="card-meta">
+                <div class="assignee">
+                  ${member?`<div class="avatar">${member.initials}</div><span>${member.name}</span>`:''}
+                </div>
+                ${card.dueDate?`<span class="due${overdue?' overdue':''}">${overdue?'⚠ ':''}${fmtDate(card.dueDate)}</span>`:''}
+              </div>
+            </div>`;
+          }).join('')}
+          <button class="add-card-btn" onclick="openNewCard('${list.id}')">+ Add card</button>
+        </div>`;
+      }).join('')}
+      <button class="add-list-btn" onclick="openNewList()">+ Add another list</button>
+    </div>
+    ${renderModal(lists)}
+  `;
+}
+
+function renderModal(lists){
+  if(!modal)return '';
+  if(modal.type==='newCard'||modal.type==='card'){
+    const isNew=modal.type==='newCard';
+    const card=isNew?{id:'',listId:modal.listId,title:'',description:'',tags:[],assigneeId:'',dueDate:''}:state.cards.find(c=>c.id===modal.cardId);
+    const members = state.members.length ? state.members : MEMBERS;
+    return `<div class="overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <h2>${isNew?'New card':'Edit card'}</h2>
+        <div class="field"><label>Title</label><input id="m-title" value="${card.title}" placeholder="Card title"></div>
+        <div class="field"><label>Description</label><textarea id="m-desc">${card.description||''}</textarea></div>
+        <div class="field"><label>Tags</label>
+          <div class="tags-pick">
+            ${TAG_COLORS.map(t=>`<span class="tag-pick tag ${t}${(card.tags||[]).includes(t)?' selected':''}" onclick="toggleTag('${t}')">${TAG_LABELS[t]}</span>`).join('')}
+          </div>
+        </div>
+        <div class="field"><label>Assign member</label>
+          <div class="members-list">
+            ${members.map(m=>`<div class="member-pick${card.assigneeId===m.id?' selected':''}" data-member="${m.id}" onclick="toggleMember('${m.id}')"><div class="avatar">${m.initials}</div>${m.name}</div>`).join('')}
+          </div>
+        </div>
+        <div class="field"><label>Due date</label><input type="date" id="m-due" value="${card.dueDate||''}"></div>
+        ${!isNew?`<div class="field"><label>Move to list</label>
+          <select id="m-list">
+            ${lists.map(l=>`<option value="${l.id}"${l.id===card.listId?' selected':''}>${l.title}</option>`).join('')}
+          </select>
+        </div>`:''}
+        <div class="modal-footer">
+          ${!isNew?`<button class="btn danger" onclick="deleteCard('${card.id}')">Delete</button>`:''}
+          <button class="btn" onclick="closeModalDirect()">Cancel</button>
+          <button class="btn primary" onclick="${isNew?'saveNewCard()':'saveCard(\''+card.id+'\')'}">Save</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  if(modal.type==='newList'||modal.type==='editList'){
+    const isNew=modal.type==='newList';
+    const list=isNew?{title:''}:state.lists.find(l=>l.id===modal.listId);
+    return `<div class="overlay" onclick="closeModal(event)">
+      <div class="modal" onclick="event.stopPropagation()" style="max-width:340px">
+        <h2>${isNew?'New list':'Rename list'}</h2>
+        <div class="field"><label>List name</label><input id="m-list-name" value="${list.title}" placeholder="e.g. In Review"></div>
+        <div class="modal-footer">
+          <button class="btn" onclick="closeModalDirect()">Cancel</button>
+          <button class="btn primary" onclick="${isNew?'saveNewList()':'saveList(\''+modal.listId+'\')'}">Save</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  return '';
+}
+
+function openCard(id){const card=state.cards.find(c=>c.id===id);tempTags=[...(card.tags||[])];tempMember=card.assigneeId||'';modal={type:'card',cardId:id};render()}
+function openNewCard(listId){tempTags=[];tempMember='';modal={type:'newCard',listId};render()}
+function openNewList(){modal={type:'newList'};render()}
+function openEditList(id){modal={type:'editList',listId:id};render()}
+function closeModal(e){if(e.target.classList.contains('overlay'))closeModalDirect()}
+function closeModalDirect(){modal=null;render()}
+
+function toggleTag(t){
+  if(tempTags.includes(t))tempTags=tempTags.filter(x=>x!==t);else tempTags.push(t);
+  document.querySelectorAll('.tag-pick').forEach(el=>{
+    const cls=[...el.classList].find(c=>TAG_COLORS.includes(c));
+    if(cls)el.classList.toggle('selected',tempTags.includes(cls));
+  });
+}
+function toggleMember(id){
+  tempMember=tempMember===id?'':id;
+  document.querySelectorAll('.member-pick').forEach(el=>{
+    el.classList.toggle('selected',el.dataset.member===tempMember);
+  });
+}
+
+async function saveNewCard(){
+  const title=document.getElementById('m-title').value.trim();
+  if(!title)return alert('Title is required');
+  const payload={
+    list_id:Number(modal.listId),
+    title,
+    description:document.getElementById('m-desc').value.trim(),
+    tags:[...tempTags],
+    member_id:tempMember?Number(tempMember):null,
+    due_date:document.getElementById('m-due').value||null
+  };
+  try{
+    await apiFetch('/cards',{method:'POST',body:payload});
+    modal=null;
+    await loadBoardData();
+  }catch(error){alert(error.message)}
+}
+
+async function saveCard(id){
+  const title=document.getElementById('m-title').value.trim();
+  if(!title)return alert('Title is required');
+  const payload={
+    title,
+    description:document.getElementById('m-desc').value.trim(),
+    tags:[...tempTags],
+    member_id:tempMember?Number(tempMember):null,
+    due_date:document.getElementById('m-due').value||null,
+    list_id:Number(document.getElementById('m-list').value)
+  };
+  try{
+    await apiFetch(`/cards/${id}`,{method:'PUT',body:payload});
+    modal=null;
+    await loadBoardData();
+  }catch(error){alert(error.message)}
+}
+
+async function deleteCard(id){
+  if(!confirm('Delete this card?'))return;
+  try{
+    await apiFetch(`/cards/${id}`,{method:'DELETE'});
+    modal=null;
+    await loadBoardData();
+  }catch(error){alert(error.message)}
+}
+
+async function saveNewList(){
+  const title=document.getElementById('m-list-name').value.trim();
+  if(!title)return alert('List name is required');
+  try{
+    await apiFetch('/lists',{method:'POST',body:{board_id:Number(state.activeBoardId),title}});
+    modal=null;
+    await loadBoardData();
+  }catch(error){alert(error.message)}
+}
+
+async function saveList(id){
+  const title=document.getElementById('m-list-name').value.trim();
+  if(!title)return alert('List name is required');
+  try{
+    await apiFetch(`/lists/${id}`,{method:'PUT',body:{title}});
+    modal=null;
+    await loadBoardData();
+  }catch(error){alert(error.message)}
+}
+
+async function deleteList(id){
+  if(!confirm('Delete this list and all its cards?'))return;
+  try{
+    await apiFetch(`/lists/${id}`,{method:'DELETE'});
+    await loadBoardData();
+  }catch(error){alert(error.message)}
+}
+
+render();
+loadBoardData();
+</script>
+</body>
+</html>
