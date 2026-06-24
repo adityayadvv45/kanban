@@ -1,0 +1,29 @@
+{
+  "agent": "hermes",
+  "model": {
+    "provider": "groq",
+    "baseUrl": "https://api.groq.com/openai/v1",
+    "id": "openai/gpt-oss-120b",
+    "apiKey": { "source": "env", "id": "GROQ_API_KEY" }
+  },
+  "memory": { "enabled": true, "backend": "local" },
+  "skills_dir": "./skills",
+  "channels": {
+    "slack": {
+      "enabled": true,
+      "mode": "socket",
+      "appToken": { "source": "env", "id": "SLACK_APP_TOKEN" },
+      "botToken": { "source": "env", "id": "SLACK_BOT_TOKEN" },
+      "channels": {
+        "main": "sprint-main",
+        "coder": "agent-coder",
+        "log": "agent-log"
+      }
+    }
+  },
+  "cron": {
+    "enabled": true,
+    "schedule": "*/10 * * * *",
+    "task": "Post a one-line progress update to #sprint-main"
+  }
+}
