@@ -1,0 +1,6 @@
+{
+    "name": "kanban/backend",
+    "require": {
+        "php": "^8.2"
+    }
+}
