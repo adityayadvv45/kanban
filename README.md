@@ -1,33 +1,34 @@
-# Kanban Board App
+# Forge 2 Qualifier — Sprint Kanban Board
 
-This repository contains a lightweight Kanban board app with:
-- plain PHP backend using SQLite
-- frontend UI in `frontend/index.html`
-- agent architecture with Hermes planning and OpenClaw coding
+A two-agent system (Hermes + OpenClaw) that built a Trello-style Kanban board.
+
+## Live URL
+[https://your-netlify-url.netlify.app](https://kanbnn.netlify.app/)
+
+## Video Walkthrough
+[https://drive.google.com/your-video-link-here](https://drive.google.com/file/d/1G6XNaRtAhirZTQ-kLVYNyeqEzNDgI2pn/view?usp=drivesdk)
+
+## What it does
+- Boards → Lists → Cards (move cards between lists)
+- Card title + description (editable)
+- Coloured tags/labels (Bug, Design, Feature, Docs, Review)
+- Assign a member to a card
+- Due date with overdue visual flag (red border + ⚠)
+
+## Agents used
+| Agent | Tool | Model |
+|---|---|---|
+| Brain (planning) | Hermes (NousResearch) | Groq openai/gpt-oss-120b |
+| Hands (coding) | OpenClaw | Groq llama-3.3-70b-versatile |
+
+## Slack channels
+| Channel | Purpose |
+|---|---|
+| #sprint-main | Human talks to Hermes, plans land here |
+| #agent-coder | Hermes assigns tasks to OpenClaw |
+| #agent-log | Raw agent activity and autonomous runs |
 
 ## How to run locally
 
-1. Open `frontend/index.html` in your browser.
-2. Start the backend server from the `backend/` directory:
-
-```bat
-php -S localhost:8000 index.php
-```
-
-3. Use the API at:
-
-```txt
-http://localhost:8000/api/boards
-```
-
-## Live URL
-
-Live deployment placeholder:
-
-```txt
-https://your-live-url.example.com
-```
-
-## Models used
-- Hermes (brain/planning) → Groq `openai/gpt-oss-120b`
-- OpenClaw (coding/execution) → Groq `llama-3.3-70b-versatile`
+### Frontend (no install needed)
+Just open in browser:
